@@ -42,6 +42,15 @@ public class Move extends Command {
 	protected boolean canFall() {
 		return getFacade().canFall(getWorm());
 	}
+	
+	public double getFallingStartTime() {
+		return this.fallingStartTime;
+	}
+	
+	public void setFallingStartTime(double fst) {
+		this.fallingStartTime = fst;
+	}
+	
 
 	@Override
 	protected void doUpdate(double dt) {

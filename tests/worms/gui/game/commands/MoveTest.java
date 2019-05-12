@@ -16,8 +16,8 @@ import worms.model.Worm;
 
 public class MoveTest {
 
-	Move move;
-	Worm worm;
+	Move move = null;
+	Worm worm = null;
 	IFacade facade = Mockito.mock(IFacade.class);
 	PlayGameScreen screen = Mockito.mock(PlayGameScreen.class);
     World world = Mockito.mock(World.class);
@@ -29,7 +29,8 @@ public class MoveTest {
 
 	@Before
 	public void setUp() throws Exception {
-		move = Mockito.mock(Move.class);
+		move = Mockito.mock(Move.class,
+				Mockito.CALLS_REAL_METHODS);
 	}
 	
 	@Test
@@ -95,7 +96,7 @@ public class MoveTest {
 	@Test 
 	public void testFallForFalse() {
 		Mockito.when(move.isFalling()).thenReturn(false);
-		move.fall(10);
+		Mockito.doCallRealMethod().when(move).fall(10.0);
 		Mockito.verify(move, Mockito.times(1)).startFalling();
 		
 		
@@ -107,7 +108,7 @@ public class MoveTest {
 	public void testAfterExecutionCompleted() {
 		worm = Mockito.mock(Worm.class);
 		Mockito.when(screen.getWormSprite(worm)).thenReturn(wormSprite);
-		move.afterExecutionCompleted();
+		Mockito.doCallRealMethod().when(move).afterExecutionCompleted();
 		Mockito.verify(wormSprite, Mockito.times(1)).setIsMoving(false);
 	}
 	
@@ -117,10 +118,19 @@ public class MoveTest {
 	public void testAfterExecutionCancelled() {
 		worm = Mockito.mock(Worm.class);
 		Mockito.when(screen.getWormSprite(worm)).thenReturn(null);
-		move.afterExecutionCancelled();
+		Mockito.doCallRealMethod().when(move).afterExecutionCancelled();
 		Mockito.verify(screen, Mockito.times(1)).addMessage("This worm cannot move like that :(",
 				MessageType.ERROR);
 	
+	}
+	
+	@Test
+	public void testEnsureFalling() {
+		move.setFallingStartTime(-1);
+		Mockito.when(move.getElapsedTime()).thenReturn(10.0);
+		Mockito.doCallRealMethod().when(move).ensureFalling();
+		assertEquals(10.0, move.getFallingStartTime());
+		//assertEquals(true, move.isFalling());
 	}
 	
 	

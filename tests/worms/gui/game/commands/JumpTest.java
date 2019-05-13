@@ -135,16 +135,5 @@ public class JumpTest {
 	
 	
 	
-/*	@Test
-	public void testDoUpdateWhenTheresASpriteAndGetElapsedIsGreaterThanGetDuration() {
-		when(screen.getWormSprite(worm)).thenReturn(wormSprite);
-		doReturn(10.0).when(move).getElapsedTime();
-		doReturn(5.0).when(move).getDuration();
-		move.doUpdate(anyDouble());
-		verify(wormSprite, times(2)).setIsMoving(anyBoolean());
-		verify(move, times(1)).fall(anyDouble());
-	}
-	*/
-	
 
 }

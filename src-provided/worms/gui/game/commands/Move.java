@@ -74,6 +74,10 @@ public class Move extends Command {
 	protected boolean isFalling() {
 		return isFalling;
 	}
+	
+	public void setIsFalling(boolean isIt) {
+		this.isFalling = isIt;
+	}
 
 	protected void ensureFalling() {
 		if (fallingStartTime == -1) {

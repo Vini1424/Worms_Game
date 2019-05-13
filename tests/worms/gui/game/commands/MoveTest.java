@@ -95,6 +95,26 @@ public class MoveTest {
 		
 	}
 	
+	@Test
+	public void testDoUpdateWhenTheresASpriteAndGetElapsedIsLessThanGetDuration() {
+		when(screen.getWormSprite(worm)).thenReturn(wormSprite);
+		doReturn(5.0).when(move).getElapsedTime();
+		doReturn(10.0).when(move).getDuration();
+		move.doUpdate(anyDouble());
+		verify(wormSprite, times(1)).setIsMoving(anyBoolean());
+		verify(wormSprite, times(1)).setCenterLocation(anyDouble(), anyDouble());
+	}
+	
+	@Test
+	public void testDoUpdateWhenTheresASpriteAndGetElapsedIsGreaterThanGetDuration() {
+		when(screen.getWormSprite(worm)).thenReturn(wormSprite);
+		doReturn(10.0).when(move).getElapsedTime();
+		doReturn(5.0).when(move).getDuration();
+		move.doUpdate(anyDouble());
+		verify(wormSprite, times(2)).setIsMoving(anyBoolean());
+		verify(move, times(1)).fall(anyDouble());
+	}
+	
 	@Test 
 	public void testFallForTrue() {
 		move.setIsFalling(true);
@@ -135,10 +155,31 @@ public class MoveTest {
 	}
 	
 	@Test
+	public void testAfterExecutionCancelledIfTheresAWorm() {
+		
+		when(screen.getWormSprite(worm)).thenReturn(wormSprite);
+		move.afterExecutionCancelled();
+		verify(wormSprite, times(1)).setIsMoving(anyBoolean());
+		verify(screen, times(1)).addMessage("This worm cannot move like that :(",
+				MessageType.ERROR);
+	
+	}
+	
+	
+	@Test
 	public void testEnsureFalling() {
 		doReturn(10.0).when(move).getElapsedTime();
 		move.ensureFalling();
 		assertEquals(10.0, move.getFallingStartTime(), 0.1);
+		assertEquals(true, move.isFalling());
+	}
+	
+	
+	@Test
+	public void testEnsureFallingWhenFallingStartTimeIsNotMinusOne() {
+		
+		move.ensureFalling();
+		assertEquals(true, move.isFalling());
 	}
 	
 	

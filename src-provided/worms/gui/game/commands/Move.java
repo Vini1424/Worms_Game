@@ -35,7 +35,7 @@ public class Move extends Command {
 		return getWorm() != null && getFacade().canMove(getWorm());
 	}
 
-	private double getDuration() {
+	public double getDuration() {
 		return GUIConstants.MOVE_DURATION;
 	}
 

@@ -16,6 +16,7 @@ import worms.gui.messages.MessageType;
 import worms.model.IFacade;
 import worms.model.World;
 import worms.model.Worm;
+import worms.model.*;
 
 public class MoveTest {
 
@@ -115,6 +116,60 @@ public class MoveTest {
 		verify(move, times(1)).fall(anyDouble());
 	}
 	
+	@Test
+	public void testUpdateFallingWhenTimeElapsedFallingIsLessThanDuration() {
+		when(screen.getWormSprite(worm)).thenReturn(wormSprite);
+		when(screen.screenToWorldDistance(anyDouble())).thenReturn(300.0);
+		doReturn(20.0).when(move).getElapsedTime();
+		doReturn(10.0).when(move).getFallingStartTime();
+		move.updateFalling();
+		verify(wormSprite, times(1)).setCenterLocation(anyDouble(), anyDouble());
+		
+	}
+	
+	@Test
+	public void testUpdateFallingWhenTimeElapsedFallingIsGreaterThanDuration() {
+		when(screen.getWormSprite(worm)).thenReturn(wormSprite);
+		when(screen.screenToWorldDistance(anyDouble())).thenReturn(5.0);
+		doReturn(20.0).when(move).getElapsedTime();
+		doReturn(10.0).when(move).getFallingStartTime();
+		move.updateFalling();
+		verify(wormSprite, times(1)).setCenterLocation(anyDouble(), anyDouble());
+		verify(move, times(1)).completeExecution();
+	}
+	
+	
+	@Test 
+	public void testStartFallingIfItCanFallAndObjectIsAlive() {
+		doReturn(true).when(move).canFall();
+		doReturn(true).when(move).isObjectStillActive();
+		move.startFalling();
+		verify(move, times(1)).ensureFalling();
+		verify(screen, times(2)).getScreenX(anyDouble());
+	}
+	
+	@Test 
+	public void testStartFallingIfItCanFallAndNoObjectIsAlive() {
+		doReturn(true).when(move).canFall();
+		doReturn(false).when(move).isObjectStillActive();
+		move.startFalling();
+		verify(move, times(1)).ensureFalling();
+		verify(screen, times(2)).getScreenY(anyDouble());
+	}
+	
+	@Test 
+	public void testStartFallingIfItCanFallAndNoObjectIsAliveWhenExcpetionIsThrown() {
+		doReturn(true).when(move).canFall();
+		doReturn(false).when(move).isObjectStillActive();
+		doThrow(new ModelException(""))
+				.when(screen)
+				.getScreenY(100);
+		move.startFalling();
+		verify(move, times(1)).ensureFalling();
+		verify(screen, times(2)).getScreenY(0);
+	}
+	
+	
 	@Test 
 	public void testFallForTrue() {
 		move.setIsFalling(true);
@@ -177,10 +232,11 @@ public class MoveTest {
 	
 	@Test
 	public void testEnsureFallingWhenFallingStartTimeIsNotMinusOne() {
-		
+		move.setFallingStartTime(1);
 		move.ensureFalling();
 		assertEquals(true, move.isFalling());
 	}
+	
 	
 	
 	

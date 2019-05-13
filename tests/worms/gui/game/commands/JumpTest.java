@@ -112,15 +112,28 @@ public class JumpTest {
 	}
 	
 	@Test
-	public void testDoUpdateWhenTheresASpriteAndGetElapsedIsGreaterThanJumpDuration() {
+	public void testDoUpdateWhenTheresASpriteAndGetElapsedIsLessThanJumpDuration() {
 		when(screen.getWormSprite(worm)).thenReturn(wormSprite);
-		doReturn(3.0).when(jump).getElapsedTime();
+		doReturn(5.0).when(jump).getElapsedTime();
 		jump.setJumpDuration(4.0);
+		jump.setHasJumped(false);
 		jump.doUpdate(anyDouble());
-		verify(wormSprite, times(1)).setIsJumping(anyBoolean());
-		verify(wormSprite, times(1)).getJumpSteps();
-		
+		verify(jump, times(1)).completeExecution();		
 	}
+	
+	@Test
+	public void testDoUpdateWhenTheresASpriteAndGetElapsedIsLessThanJumpDurationAndFacadeIsAlive() {
+		when(screen.getWormSprite(worm)).thenReturn(wormSprite);
+		doReturn(5.0).when(jump).getElapsedTime();
+		jump.setJumpDuration(4.0);
+		jump.setHasJumped(false);
+		when(facade.isAlive(worm)).thenReturn(true);
+		jump.doUpdate(anyDouble());
+		verify(wormSprite, times(1)).setCenterLocation(anyDouble(), anyDouble());
+		verify(jump, times(1)).completeExecution();		
+	}
+	
+	
 	
 /*	@Test
 	public void testDoUpdateWhenTheresASpriteAndGetElapsedIsGreaterThanGetDuration() {

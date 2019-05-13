@@ -5,6 +5,8 @@ import static org.junit.Assert.*;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
+
+
 import static org.mockito.Mockito.*;
 import static org.mockito.Matchers.*;
 
@@ -17,6 +19,7 @@ import worms.model.Worm;
 
 public class MoveTest {
 
+	Move moveClass = null;
 	Move move = null;
 	Worm worm = null;
 	IFacade facade = mock(IFacade.class);
@@ -30,8 +33,10 @@ public class MoveTest {
 
 	@Before
 	public void setUp() throws Exception {
-		move = mock(Move.class,
-				CALLS_REAL_METHODS);
+		worm = mock(Worm.class);
+		moveClass = new Move(facade, worm, screen);
+		move = spy(moveClass);
+		
 	}
 	
 	@Test
@@ -42,15 +47,14 @@ public class MoveTest {
 
 	@Test
 	public void testCanStartIfTheresNoWorm() {
-		when(move.getWorm()).thenReturn(null);
+		//when(move.getWorm()).thenReturn(null);
+		doReturn(null).when(move).getWorm();
 		assertEquals(false, move.canStart());
 	}	
 	
 	@Test 
 	public void testCanStartIfTheresAWorm() {
-		worm = mock(Worm.class);
-		when(move.getWorm()).thenReturn(worm);
-		when(move.getFacade()).thenReturn(facade);
+		doReturn(worm).when(move).getWorm();
 		when(facade.canMove(worm)).thenReturn(false);
 		assertEquals(false, move.canStart());
 		
@@ -59,27 +63,34 @@ public class MoveTest {
 
 	@Test 
 	public void testCanStartIfTheresAWormAndItCanMove() {
-		worm = mock(Worm.class);
-		when(move.getWorm()).thenReturn(worm);
-		when(move.getFacade()).thenReturn(facade);
+		
+		doReturn(worm).when(move).getWorm();
 		when(facade.canMove(worm)).thenReturn(true);
 		assertEquals(true, move.canStart());
 		
 	}
 	
 	@Test
-	public void testCanFall() {
-		worm = mock(Worm.class);
+	public void testCanFallFalse() {
+		
 		when(move.getFacade()).thenReturn(facade);
 		when(facade.canFall(worm)).thenReturn(false);
 		assertEquals(false, move.canFall());
 	}
 	
 	@Test
+	public void testCanFallTrue() {
+		
+		when(move.getFacade()).thenReturn(facade);
+		when(facade.canFall(worm)).thenReturn(true);
+		assertEquals(true, move.canFall());
+	}
+	
+	@Test
 	public void testDoUpdateWhenTheresNoSprite() {
-		worm = mock(Worm.class);
+		
 		when(screen.getWormSprite(worm)).thenReturn(null);
-		doCallRealMethod().when(move).doUpdate(10);
+		move.doUpdate(anyDouble());
 		verify(move, times(1)).cancelExecution();
 		
 	}
@@ -87,9 +98,7 @@ public class MoveTest {
 	@Test 
 	public void testFallForTrue() {
 		move.setIsFalling(true);
-		doCallRealMethod()
-			.when(move)
-			.fall(10);
+		move.fall(anyDouble());
 		verify(move, times(1)).updateFalling();
 		
 		
@@ -99,19 +108,17 @@ public class MoveTest {
 	@Test 
 	public void testFallForFalse() {
 		when(move.isFalling()).thenReturn(false);
-		doCallRealMethod().when(move).fall(10.0);
-		verify(move, times(1)).startFalling();
-		
-		
+		move.fall(anyDouble());
+		verify(move, times(1)).startFalling();	
 	}
 	
 	
 	
 	@Test
 	public void testAfterExecutionCompleted() {
-		worm = mock(Worm.class);
+		
 		when(screen.getWormSprite((Worm) any())).thenReturn(wormSprite);
-		doCallRealMethod().when(move).afterExecutionCompleted();
+		move.afterExecutionCompleted();
 		verify(wormSprite, times(1)).setIsMoving(false);
 	}
 	
@@ -119,9 +126,9 @@ public class MoveTest {
 	
 	@Test
 	public void testAfterExecutionCancelled() {
-		worm = mock(Worm.class);
+		
 		when(screen.getWormSprite(worm)).thenReturn(null);
-		doCallRealMethod().when(move).afterExecutionCancelled();
+		move.afterExecutionCancelled();
 		verify(screen, times(1)).addMessage("This worm cannot move like that :(",
 				MessageType.ERROR);
 	
@@ -129,11 +136,9 @@ public class MoveTest {
 	
 	@Test
 	public void testEnsureFalling() {
-		move.setFallingStartTime(-1);
-		when(move.getElapsedTime()).thenReturn(10.0);
-		doCallRealMethod().when(move).ensureFalling();
-		assertEquals(10.0, move.getFallingStartTime());
-		//assertEquals(true, move.isFalling());
+		doReturn(10.0).when(move).getElapsedTime();
+		move.ensureFalling();
+		assertEquals(10.0, move.getFallingStartTime(), 0.1);
 	}
 	
 	

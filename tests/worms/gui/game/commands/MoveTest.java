@@ -169,7 +169,17 @@ public class MoveTest {
 		verify(screen, times(2)).getScreenY(0);
 	}
 	
+	@Test
+	public void testDoStartExecution() {
+		
+		doThrow(new ModelException(""))
+		.when(screen)
+		.getScreenY(anyDouble());
+		move.doStartExecution();
+		verify(move, times(1)).cancelExecution();
+	}
 	
+
 	@Test 
 	public void testFallForTrue() {
 		move.setIsFalling(true);
@@ -236,8 +246,7 @@ public class MoveTest {
 		move.ensureFalling();
 		assertEquals(true, move.isFalling());
 	}
-	
-	
+	 
 	
 	
 }

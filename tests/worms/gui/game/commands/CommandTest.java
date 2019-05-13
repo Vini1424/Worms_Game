@@ -16,7 +16,7 @@ import worms.model.Worm;
 
 public class CommandTest {
 
-	Command  c = null;
+	Command c = null;
 	IFacade facade = Mockito.mock(IFacade.class);
 	PlayGameScreen screen = Mockito.mock(PlayGameScreen.class);
     World world = Mockito.mock(World.class);

@@ -10,12 +10,14 @@ import worms.model.Worm;
 
 public class Jump extends Command {
 	private boolean hasJumped;
+
+	public void setHasJumped(boolean hasJumped) {
+		this.hasJumped = hasJumped;
+	}
+
 	private final Worm worm;
 	private double jumpDuration;
 
-	public double getJumpDuration() {
-		return jumpDuration;
-	}
 
 	public void setJumpDuration(double jumpDuration) {
 		this.jumpDuration = jumpDuration;

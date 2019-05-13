@@ -13,6 +13,14 @@ public class Jump extends Command {
 	private final Worm worm;
 	private double jumpDuration;
 
+	public double getJumpDuration() {
+		return jumpDuration;
+	}
+
+	public void setJumpDuration(double jumpDuration) {
+		this.jumpDuration = jumpDuration;
+	}
+
 	public Jump(IFacade facade, Worm worm, PlayGameScreen screen) {
 		super(facade, screen);
 		this.worm = worm;

@@ -4,15 +4,16 @@ package worms.model;
 import static org.mockito.Mockito.*;
 
 import org.junit.Test;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Matchers;
 import org.mockito.Mock;
 
 import org.junit.Assert;
-
+import org.junit.Before;
 import org.antlr.v4.runtime.tree.TerminalNode;
+
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,6 +42,7 @@ import worms.model.programs.parser.WormsParserParser.WhiledoContext;
 import worms.model.part3.*;
 
 
+@RunWith(Parameterized.class)
 public class WormsParserMyListenerTest {
 
 	private WormsParserMyListener wpml;
@@ -49,7 +51,7 @@ public class WormsParserMyListenerTest {
 	@Mock
 	private MyToken token;
 
-	@BeforeEach
+	@Before
 	public void setUp() {
 		token = mock(MyToken.class);
 		factory = (ProgramFactory<Expression<Type>, Statement, Type>) mock(ProgramFactory.class);
@@ -139,8 +141,8 @@ public class WormsParserMyListenerTest {
 	}
 
 	@Test
-	@ParameterizedTest
-	@MethodSource("lista")
+//	@ParameterizedTest
+//	@MethodSource("lista")
 	public void enterEvalTest(EvalContext eval, AssignContext assign, CtrlContext ctrl, ActionContext action,
 			DeclContext decl, TypeContext type, TerminalNode term, ExprContext expr, Statement s) {
 		when(factory.createSequence(anyInt(), anyInt(), Matchers.anyListOf(Statement.class))).thenReturn(s);
@@ -169,8 +171,8 @@ public class WormsParserMyListenerTest {
 	}
 	
 	@Test
-	@ParameterizedTest
-	@MethodSource("lista2")
+//	@ParameterizedTest
+//	@MethodSource("lista2")
 	public void StatementOfIfthenelseTest(Statement s, int size) {
 		CtrlContext ctrl = mock(CtrlContext.class);
 		EvalContext eval = mock(EvalContext.class);
@@ -188,8 +190,8 @@ public class WormsParserMyListenerTest {
 	}
 	
 	@Test
-	@ParameterizedTest
-	@MethodSource("lista3")
+//	@ParameterizedTest
+//	@MethodSource("lista3")
 	public void StatementOfForeachTest(TerminalNode term, Statement s) {
 		EntityspecContext ent = mock(EntityspecContext.class);
 		TerminalNode t = mock(TerminalNode.class);
@@ -214,8 +216,8 @@ public class WormsParserMyListenerTest {
 	}
 	
 	@Test
-	@ParameterizedTest
-	@MethodSource("lista4")
+//	@ParameterizedTest
+//	@MethodSource("lista4")
 	public void StatementOfWhiledoTest(Statement s, int size, int opt, NamedconstContext ncc,TerminalNode t,
 			TerminalNode term, UnopContext unop, BinopContext binop) {
 		EntityspecContext ent = mock(EntityspecContext.class);

@@ -1,11 +1,14 @@
 package worms.model;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import static org.mockito.Mockito.*;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Random;
 
 import org.junit.Before;
@@ -13,9 +16,16 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import worms.gui.game.IActionHandler;
+import worms.model.exceptions.IllegalActionPointException;
+import worms.model.exceptions.IllegalNameException;
+import worms.model.exceptions.IllegalPositionException;
+import worms.model.exceptions.IllegalRadiusException;
+import worms.model.part3.Action;
+import worms.model.part3.Type;
 import worms.model.programs.ParseOutcome;
 import worms.model.programs.ParseOutcome.Success;
 import worms.util.Util;
+
 
 public class PartialFacadeTest {
 
@@ -25,6 +35,9 @@ public class PartialFacadeTest {
 	private Random random;
 	private World world;
 	private Worm worm;
+	private Program program;
+	private Food food;
+	private Projectile projectile;
 
 	// X X X X
 	// . . . .
@@ -34,13 +47,16 @@ public class PartialFacadeTest {
 		{ false, false, false, false }, { true, true, true, true },
 		{ true, true, true, true }, { false, false, false, false } };
 
-		
+
 		@Before
 		public void setup() {
 			facade = new Facade();
 			random = new Random(7357);
 			world = new World(4.0, 4.0, passableMap, random);
 			worm = new Worm(world, 1, 2, 0, 1, "Test");
+			program = new Program(new HashMap<String,Type>(), new Action(), new SimpleActionHandler(facade));
+			food = new Food(world, 1.0, 1.0);
+			projectile = new Projectile(world, 1.0, 1.0, 1.0, 1, Guns.Bazooka);
 		}
 
 		@Test
@@ -59,7 +75,7 @@ public class PartialFacadeTest {
 		}
 
 		@Test
-		public void restCreateWormWithoutProgram() {
+		public void testCreateWormWithoutProgram() {
 			Facade anotherObjSpy = Mockito.spy((Facade)facade);
 			World mockWorld = Mockito.spy(world);
 			Worm mockWorm = Mockito.spy(worm);
@@ -79,13 +95,14 @@ public class PartialFacadeTest {
 			Worm mockWorm = Mockito.spy(worm);
 			doReturn(5).when(mockWorm).getMaxActionPoints();
 
-			facade.getMaxActionPoints(mockWorm);
+			int result = facade.getMaxActionPoints(mockWorm);
 
 			verify(mockWorm, times(1)).getMaxActionPoints();
+			assertEquals(5, result);
 		}
 
 		@Test
-		public void testMoveHorizontal() {
+		public void testMove() {
 			Worm mockWorm = Mockito.spy(worm);
 
 			try {
@@ -99,48 +116,682 @@ public class PartialFacadeTest {
 		}
 
 		@Test
-		public void testMoveVertical() {
-			Worm worm = facade.createWorm(world, 1, 1.5, Math.PI / 2, 0.5, "Test",
-					null);
-			facade.move(worm);
-			assertEquals(1, facade.getX(worm), EPS);
-			assertEquals(2.0, facade.getY(worm), EPS);
+		public void testTurn() {
+			Worm mockWorm = Mockito.spy(worm);
+			doNothing().when(mockWorm).turn(anyDouble());
+			facade.turn(mockWorm, 5.0);
+
+			verify(mockWorm, times(1)).turn(5.0);
+		}
+
+		@Test(expected=ModelException.class)
+		public void testTurnException() {
+			Worm mockWorm = Mockito.spy(worm);
+			Facade spyFacade = Mockito.spy((Facade)facade);
+
+			doThrow(new AssertionError()).when(mockWorm).turn(anyDouble());
+			spyFacade.turn(mockWorm, 5.0);
+
+			verify(mockWorm, times(1)).turn(5.0);
+		}
+		
+		@Test
+		public void testGetJumpTime() {
+			Worm mockWorm = Mockito.spy(worm);
+			doReturn(6.0).when(mockWorm).getJumpTime(anyDouble());
+			
+			double result = facade.getJumpTime(mockWorm, 5.0);
+
+			verify(mockWorm, times(1)).getJumpTime(5.0);
+			assertEquals(6.0, result, EPS);
+		}
+		
+		@Test(expected=ModelException.class)
+		public void testGetJumpTimeException() {
+			Worm mockWorm = Mockito.spy(worm);
+			Facade spyFacade = Mockito.spy((Facade)facade);
+
+			doThrow(new IllegalPositionException(5.0, 'a')).when(mockWorm).getJumpTime(anyDouble());
+			spyFacade.getJumpTime(mockWorm, 5.0);
+
+			verify(mockWorm, times(1)).getJumpTime(5.0);
+		}
+		
+		@Test(expected=ModelException.class)
+		public void testJumpAbleException() {
+			Worm mockWorm = Mockito.spy(worm);
+			doReturn(false).when(mockWorm).isAbleToJump();
+
+			facade.jump(mockWorm, 5.0);
+
+			verify(mockWorm, times(1)).isAbleToJump();
+		}
+		
+		@Test
+		public void testJump() {
+			Worm mockWorm = Mockito.spy(worm);
+			doNothing().when(mockWorm).jump(anyDouble());
+			doReturn(true).when(mockWorm).isAbleToJump();
+
+			facade.jump(mockWorm, 5.0);
+
+			verify(mockWorm, times(1)).isAbleToJump();
+			verify(mockWorm, times(1)).jump(5.0);
+		}
+		
+		@Test(expected=ModelException.class)
+		public void testJumpException() {
+			Worm mockWorm = Mockito.spy(worm);
+			doReturn(true).when(mockWorm).isAbleToJump();
+			doThrow(new IllegalPositionException(5.0,'a')).when(mockWorm).jump(anyDouble());
+
+			facade.jump(mockWorm, 5.0);
+
+			verify(mockWorm, times(1)).isAbleToJump();
+			verify(mockWorm, times(1)).jump(5.0);
+		}
+		
+		@Test
+		public void testJumpProjectile() {
+			Projectile mockProjectile = Mockito.spy(projectile);
+			doNothing().when(mockProjectile).jump(anyDouble());
+
+			facade.jump(mockProjectile, 5.0);
+
+			verify(mockProjectile, times(1)).jump(5.0);
+			
+
+			World mockWorld = Mockito.spy(world);
+		}
+		
+		@Test(expected=ModelException.class)
+		public void testJumpExceptionProjectile() {
+			Projectile mockProjectile = Mockito.spy(projectile);
+			doThrow(new IllegalPositionException(5.0,'a')).when(mockProjectile).jump(anyDouble());
+
+			facade.jump(mockProjectile, 5.0);
+
+			verify(mockProjectile, times(1)).jump(5.0);
+		}
+		
+		@Test(expected=ModelException.class)
+		public void testGetJumpStepAbleException() {
+			Worm mockWorm = Mockito.spy(worm);
+			doReturn(false).when(mockWorm).isAbleToJump();
+
+			facade.getJumpStep(mockWorm, 5.0);
+
+			verify(mockWorm, times(1)).isAbleToJump();
+		}
+		
+		@Test
+		public void testGetJumpStep() {
+			Worm mockWorm = Mockito.spy(worm);
+			doReturn(new double[] {1.1,2.2}).when(mockWorm).getJumpStep(anyDouble());
+			doReturn(true).when(mockWorm).isAbleToJump();
+
+			double[] result = facade.getJumpStep(mockWorm, 5.0);
+
+			verify(mockWorm, times(1)).isAbleToJump();
+			verify(mockWorm, times(1)).getJumpStep(5.0);
+			assertEquals(1.1, result[0], EPS);
+			assertEquals(2.2, result[1], EPS);
+		}
+		
+		@Test(expected=ModelException.class)
+		public void testGetJumpStepException() {
+			Worm mockWorm = Mockito.spy(worm);
+			doReturn(true).when(mockWorm).isAbleToJump();
+			doThrow(new IllegalPositionException(5.0,'a')).when(mockWorm).getJumpStep(anyDouble());
+
+			facade.getJumpStep(mockWorm, 5.0);
+
+			verify(mockWorm, times(1)).isAbleToJump();
+			verify(mockWorm, times(1)).getJumpStep(5.0);
+		}
+		
+		@Test
+		public void testGetJumpStepProjectile() {
+			Projectile mockProjectile = Mockito.spy(projectile);
+			doReturn(new double[] {1.1,2.2}).when(mockProjectile).getJumpStep(anyDouble());
+
+			double[] result = facade.getJumpStep(mockProjectile, 5.0);
+
+			verify(mockProjectile, times(1)).getJumpStep(5.0);
+			assertEquals(1.1, result[0], EPS);
+			assertEquals(2.2, result[1], EPS);
+		}
+		
+		@Test(expected=ModelException.class)
+		public void testGetJumpStepExceptionProjectile() {
+			Projectile mockProjectile = Mockito.spy(projectile);
+			doThrow(new IllegalPositionException(5.0,'a')).when(mockProjectile).getJumpStep(anyDouble());
+
+			facade.getJumpStep(mockProjectile, 5.0);
+
+			verify(mockProjectile, times(1)).getJumpStep(5.0);
+		}
+		
+		@Test
+		public void testGetJumpTimeProjectile() {
+			Projectile mockProjectile = Mockito.spy(projectile);
+			doReturn(5.0).when(mockProjectile).getJumpTime(anyDouble());
+
+			double result = facade.getJumpTime(mockProjectile, 5.0);
+
+			verify(mockProjectile, times(1)).getJumpTime(5.0);
+			assertEquals(5.0, result, EPS);
+		}
+		
+		@Test(expected=ModelException.class)
+		public void testGetJumpTimeExceptionProjectile() {
+			Projectile mockProjectile = Mockito.spy(projectile);
+			doThrow(new IllegalPositionException(5.0,'a')).when(mockProjectile).getJumpTime(anyDouble());
+
+			facade.getJumpTime(mockProjectile, 5.0);
+
+			verify(mockProjectile, times(1)).getJumpTime(5.0);
+		}
+		
+		@Test
+		public void testSetRadius() {
+			Worm mockWorm = Mockito.spy(worm);
+			doNothing().when(mockWorm).setRadius(anyDouble());
+
+			facade.setRadius(mockWorm, 5.0);
+
+			verify(mockWorm, times(1)).setRadius(5.0);
+		}
+		
+		@Test(expected=ModelException.class)
+		public void testSetRadiusException() {
+			Worm mockWorm = Mockito.spy(worm);
+			doThrow(new IllegalRadiusException(5.0)).when(mockWorm).setRadius(anyDouble());
+
+			facade.setRadius(mockWorm, 5.0);
+
+			verify(mockWorm, times(1)).setRadius(5.0);
+		}
+		
+		@Test
+		public void testRename() {
+			Worm mockWorm = Mockito.spy(worm);
+			doNothing().when(mockWorm).setName(anyString());
+
+			facade.rename(mockWorm, "Test");
+
+			verify(mockWorm, times(1)).setName("Test");
+		}
+		
+		@Test(expected=ModelException.class)
+		public void testRenameException() {
+			Worm mockWorm = Mockito.spy(worm);
+			doThrow(new IllegalNameException("Test")).when(mockWorm).setName(anyString());
+
+			facade.rename(mockWorm, "Test");
+
+			verify(mockWorm, times(1)).setName("Test");
+		}
+		
+		@Test
+		public void testShoot() {
+			Worm mockWorm = Mockito.spy(worm);
+			try {
+				doNothing().when(mockWorm).shoot(anyInt());
+				
+				facade.shoot(mockWorm, 5);
+
+				verify(mockWorm, times(1)).shoot(5);
+			} catch (IllegalActionPointException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		@Test(expected=ModelException.class)
+		public void testShootException() throws IllegalActionPointException {
+			Worm mockWorm = Mockito.spy(worm);
+			doThrow(new IllegalActionPointException(5)).when(mockWorm).shoot(anyInt());
+
+			facade.shoot(mockWorm, 5);
+
+			verify(mockWorm, times(1)).shoot(5);
+		}
+		
+		@Test
+		public void testCanFall() {
+			Worm mockWorm = Mockito.spy(worm);
+			doReturn(true).when(mockWorm).isAbleToFall();
+
+			boolean result = facade.canFall(mockWorm);
+
+			verify(mockWorm, times(1)).isAbleToFall();
+			assertEquals(true, result);
 		}
 
 		@Test
-		public void testMoveVerticalAlongTerrain() {
-			// . . X
-			// . w X
-			World world = facade.createWorld(3.0, 2.0, new boolean[][] {
-				{ true, true, false }, { true, true, false } }, random);
-			Worm worm = facade.createWorm(world, 1.5, 0.5,
-					Math.PI / 2 - 10 * 0.0175, 0.5, "Test", null);
-			facade.move(worm);
-			assertEquals(1.5, facade.getX(worm), 0.1); //our method follows the direction of the worm more, and does not go completely straight up. It's endposition is still Adjacent, so that's not a problem.
-			assertEquals(1.0, facade.getY(worm), 0.01);
-			assertTrue(world.isAdjacentPosition(facade.getX(worm), facade.getY(worm), facade.getRadius(worm)));
+		public void testCanTurn() {
+			Worm mockWorm = Mockito.spy(worm);
+			doReturn(true).when(mockWorm).isAbleToTurn(anyDouble());
+
+			boolean result = facade.canTurn(mockWorm, 5.0);
+
+			verify(mockWorm, times(1)).isAbleToTurn(anyDouble());
+			assertEquals(true, result);
 		}
 
 		@Test
-		public void testFall() {
-			// . X .
-			// . w .
-			// . . .
-			// X X X
-			World world = facade.createWorld(3.0, 4.0, new boolean[][] {
-				{ true, false, true }, { true, true, true },
-				{ true, true, true }, { false, false, false } }, random);
-			Worm worm = facade.createWorm(world, 1.5, 2.5, -Math.PI / 2, 0.5,
-					"Test", null);
-			assertFalse(facade.canFall(worm));
-			facade.move(worm);
-			assertTrue(facade.canFall(worm));
-			facade.fall(worm);
-			assertEquals(1.5, facade.getX(worm), EPS);
-			assertTrue("Worm must land at adjacent location",
-					Util.fuzzyBetween(1.5, 1.55, facade.getY(worm), EPS));
+		public void testCanMove() {
+			Worm mockWorm = Mockito.spy(worm);
+			doReturn(true).when(mockWorm).isAbleToMove();
+
+			boolean result = facade.canMove(mockWorm);
+
+			verify(mockWorm, times(1)).isAbleToMove();
+			assertEquals(true, result);
+		}
+
+		@Test
+		public void testFall() {			
+			Worm mockWorm = Mockito.spy(worm);
+			doNothing().when(mockWorm).fall();
+
+			facade.fall(mockWorm);
+
+			verify(mockWorm, times(1)).fall();
+		};
+		
+
+		@Test
+		public void testGetX() {			
+			Worm mockWorm = Mockito.spy(worm);
+			doReturn(5.0).when(mockWorm).getXPosition();
+
+			double result = facade.getX(mockWorm);
+
+			verify(mockWorm, times(1)).getXPosition();
+			assertEquals(5.0, result, EPS);
+		};
+		
+		@Test
+		public void testGetY() {			
+			Worm mockWorm = Mockito.spy(worm);
+			doReturn(5.0).when(mockWorm).getYPosition();
+
+			double result = facade.getY(mockWorm);
+
+			verify(mockWorm, times(1)).getYPosition();
+			assertEquals(5.0, result, EPS);
+		};
+		
+		@Test
+		public void testGetRadius() {			
+			Worm mockWorm = Mockito.spy(worm);
+			doReturn(5.0).when(mockWorm).getRadius();
+
+			double result = facade.getRadius(mockWorm);
+
+			verify(mockWorm, times(1)).getRadius();
+			assertEquals(5.0, result, EPS);
 		};
 
+		@Test
+		public void testGetMinimalRadius() {			
+			Worm mockWorm = Mockito.spy(worm);
+			
+			double result = facade.getMinimalRadius(mockWorm);
+
+			assertEquals(0.25, result, EPS);
+		};
+		
+		@Test
+		public void testGetActionPoints() {			
+			Worm mockWorm = Mockito.spy(worm);
+			doReturn(5).when(mockWorm).getRemainingActionPoints();
+
+			int result = facade.getActionPoints(mockWorm);
+
+			verify(mockWorm, times(1)).getRemainingActionPoints();
+			assertEquals(5, result);
+		};
+		
+		@Test
+		public void testGetName() {			
+			Worm mockWorm = Mockito.spy(worm);
+			doReturn("Test").when(mockWorm).getName();
+
+			String result = facade.getName(mockWorm);
+
+			verify(mockWorm, times(1)).getName();
+			assertEquals("Test", result);
+		};
+		
+		@Test
+		public void testGetMass() {			
+			Worm mockWorm = Mockito.spy(worm);
+			doReturn(5.0).when(mockWorm).getMass();
+
+			double result = facade.getMass(mockWorm);
+
+			verify(mockWorm, times(1)).getMass();
+			assertEquals(5.0, result, EPS);
+		};
+		
+		@Test
+		public void testGetNullTeamName() {			
+			Worm mockWorm = Mockito.spy(worm);
+			doReturn(null).when(mockWorm).getTeam();
+
+			String result = facade.getTeamName(mockWorm);
+
+			verify(mockWorm, times(1)).getTeam();
+			assertEquals("", result);
+		};
+		
+		@Test
+		public void testGetTeamName() {			
+			Worm mockWorm = Mockito.spy(worm);
+			Team mockTeam = mock(Team.class);
+			doReturn(mockTeam).when(mockWorm).getTeam();
+			doReturn("Test").when(mockTeam).getName();
+
+			String result = facade.getTeamName(mockWorm);
+
+			verify(mockWorm, times(2)).getTeam();
+			assertEquals("Test", result);
+		};
+		
+		@Test
+		public void testGetHitPoints() {			
+			Worm mockWorm = Mockito.spy(worm);
+			doReturn(5).when(mockWorm).getRemainingHitPoints();
+
+			int result = facade.getHitPoints(mockWorm);
+
+			verify(mockWorm, times(1)).getRemainingHitPoints();
+			assertEquals(5, result);
+		};
+		
+		@Test
+		public void testGetMaxHitPoints() {			
+			Worm mockWorm = Mockito.spy(worm);
+			doReturn(5).when(mockWorm).getMaxHitPoints();
+
+			int result = facade.getMaxHitPoints(mockWorm);
+
+			verify(mockWorm, times(1)).getMaxHitPoints();
+			assertEquals(5, result);
+		};
+		
+		@Test
+		public void testSelectNextWeapon() {
+			Worm mockWorm = Mockito.spy(worm);
+			doNothing().when(mockWorm).selectNextWeapon();
+			
+			facade.selectNextWeapon(mockWorm);
+
+			verify(mockWorm, times(1)).selectNextWeapon();
+		}
+
+		@Test
+		public void testGetSelectedWeapon() {			
+			Worm mockWorm = Mockito.spy(worm);
+			Guns mockEnum = Guns.Bazooka;
+			doReturn(mockEnum).when(mockWorm).getCurrentWeapon();
+
+			String result = facade.getSelectedWeapon(mockWorm);
+
+			verify(mockWorm, times(1)).getCurrentWeapon();
+			assertEquals("Bazooka", result);
+		};
+		
+		@Test
+		public void testGetNullProgram() {			
+			Worm mockWorm = Mockito.spy(worm);
+			doReturn(null).when(mockWorm).getProgram();
+
+			boolean result = facade.hasProgram(mockWorm);
+
+			verify(mockWorm, times(1)).getProgram();
+			assertEquals(false, result);
+		};
+		
+		@Test
+		public void testGetProgram() {			
+			Worm mockWorm = Mockito.spy(worm);
+			doReturn(mock(Program.class)).when(mockWorm).getProgram();
+
+			boolean result = facade.hasProgram(mockWorm);
+
+			verify(mockWorm, times(1)).getProgram();
+			assertEquals(true, result);
+		};
+		
+		@Test
+		public void testIsAliveFalse() {			
+			Worm mockWorm = Mockito.spy(worm);
+			doReturn(false).when(mockWorm).isTerminated();
+
+			boolean result = facade.isAlive(mockWorm);
+
+			verify(mockWorm, times(1)).isTerminated();
+			assertEquals(true, result);
+		};
+		
+		@Test
+		public void testIsAliveTrue() {			
+			Worm mockWorm = Mockito.spy(worm);
+			doReturn(true).when(mockWorm).isTerminated();
+
+			boolean result = facade.isAlive(mockWorm);
+
+			verify(mockWorm, times(1)).isTerminated();
+			assertEquals(false, result);
+		};
+		
+		@Test
+		public void testGetRadiusFood() {			
+			Food mockFood = Mockito.spy(food);
+			doReturn(5.0).when(mockFood).getRadius();
+
+			double result = facade.getRadius(mockFood);
+
+			verify(mockFood, times(1)).getRadius();
+			assertEquals(5.0, result, EPS);
+		};
+		
+		@Test
+		public void testGetXProjectile() {			
+			Projectile mockFood = Mockito.spy(projectile);
+			doReturn(5.0).when(mockFood).getXPosition();
+
+			double result = facade.getX(mockFood);
+
+			verify(mockFood, times(1)).getXPosition();
+			assertEquals(5.0, result, EPS);
+		};
+		
+		@Test
+		public void testGetYProjectile() {			
+			Projectile mockFood = Mockito.spy(projectile);
+			doReturn(5.0).when(mockFood).getYPosition();
+
+			double result = facade.getY(mockFood);
+
+			verify(mockFood, times(1)).getYPosition();
+			assertEquals(5.0, result, EPS);
+		};
+		
+		@Test
+		public void testGetRadiusProjectile() {			
+			Projectile mockFood = Mockito.spy(projectile);
+			doReturn(5.0).when(mockFood).getRadius();
+
+			double result = facade.getRadius(mockFood);
+
+			verify(mockFood, times(1)).getRadius();
+			assertEquals(5.0, result, EPS);
+		};
+		
+		@Test
+		public void testGetXFood() {			
+			Food mockFood = Mockito.spy(food);
+			doReturn(5.0).when(mockFood).getXPosition();
+
+			double result = facade.getX(mockFood);
+
+			verify(mockFood, times(1)).getXPosition();
+			assertEquals(5.0, result, EPS);
+		};
+		
+		@Test
+		public void testGetYFood() {			
+			Food mockFood = Mockito.spy(food);
+			doReturn(5.0).when(mockFood).getYPosition();
+
+			double result = facade.getY(mockFood);
+
+			verify(mockFood, times(1)).getYPosition();
+			assertEquals(5.0, result, EPS);
+		};
+		
+		@Test
+		public void testGetFood() {			
+			World mockWorld = Mockito.spy(world);
+			doReturn(new LinkedList<Food>()).when(mockWorld).getAllFood();
+
+			Collection<Food> result = facade.getFood(mockWorld);
+
+			verify(mockWorld, times(1)).getAllFood();
+			assertEquals(new LinkedList<Food>(), result);
+		};
+		
+		@Test
+		public void testGetWorms() {			
+			World mockWorld = Mockito.spy(world);
+			doReturn(new LinkedList<Worm>()).when(mockWorld).getAllWorms();
+
+			Collection<Worm> result = facade.getWorms(mockWorld);
+
+			verify(mockWorld, times(1)).getAllWorms();
+			assertEquals(new LinkedList<Worm>(), result);
+		};
+		
+		@Test
+		public void testIsAdjacent() {			
+			World mockWorld = Mockito.spy(world);
+			doReturn(true).when(mockWorld).isAdjacentPosition(anyDouble(), anyDouble(), anyDouble());
+
+			boolean result = facade.isAdjacent(mockWorld, 2.0, 3.0, 4.0);
+
+			verify(mockWorld, times(1)).isAdjacentPosition(2.0, 3.0, 4.0);
+			assertEquals(true, result);
+		};
+		
+		@Test
+		public void testIsGameFinished() {			
+			World mockWorld = Mockito.spy(world);
+			doReturn(true).when(mockWorld).isGameFinished();
+
+			boolean result = facade.isGameFinished(mockWorld);
+
+			verify(mockWorld, times(1)).isGameFinished();
+			assertEquals(true, result);
+		};
+		
+		@Test
+		public void testIsImpassable() {			
+			World mockWorld = Mockito.spy(world);
+			doReturn(true).when(mockWorld).isImpassablePosition(anyDouble(), anyDouble(), anyDouble());
+
+			boolean result = facade.isImpassable(mockWorld, 2.0, 3.0, 4.0);
+
+			verify(mockWorld, times(1)).isImpassablePosition(2.0, 3.0, 4.0);
+			assertEquals(true, result);
+		};
+		
+		@Test
+		public void testIsWellFormed() {			
+			Program mockProgram = Mockito.spy(program);
+			doReturn(true).when(mockProgram).isValidProgram();
+
+			boolean result = facade.isWellFormed(mockProgram);
+
+			verify(mockProgram, times(1)).isValidProgram();
+			assertEquals(true, result);
+		};
+		
+		@Test
+		public void testIsActiveTrue() {			
+			Food mockFood = Mockito.spy(food);
+			doReturn(true).when(mockFood).isTerminated();
+
+			boolean result = facade.isActive(mockFood);
+
+			verify(mockFood, times(1)).isTerminated();
+			assertEquals(false, result);
+		};
+		
+		@Test
+		public void testIsActiveFalse() {			
+			Food mockFood = Mockito.spy(food);
+			doReturn(false).when(mockFood).isTerminated();
+
+			boolean result = facade.isActive(mockFood);
+
+			verify(mockFood, times(1)).isTerminated();
+			assertEquals(true, result);
+		};
+		
+		@Test
+		public void testGetActiveProjectile() {			
+			World mockWorld = Mockito.spy(world);
+			doReturn(mock(Projectile.class)).when(mockWorld).getActiveProjectile();
+
+			facade.getActiveProjectile(mockWorld);
+
+			verify(mockWorld, times(1)).getActiveProjectile();
+		};
+		
+		@Test
+		public void testAddNewFood() {			
+			World mockWorld = Mockito.spy(world);
+			doNothing().when(mockWorld).addNewFood();
+
+			facade.addNewFood(mockWorld);
+
+			verify(mockWorld, times(1)).addNewFood();
+		};
+		
+		@Test
+		public void testStartGame() {			
+			World mockWorld = Mockito.spy(world);
+			doNothing().when(mockWorld).startGame();
+
+			facade.startGame(mockWorld);
+
+			verify(mockWorld, times(1)).startGame();
+		};
+		
+		@Test
+		public void testStartNextTurn() {			
+			World mockWorld = Mockito.spy(world);
+			doNothing().when(mockWorld).startNextTurn();
+
+			facade.startNextTurn(mockWorld);
+
+			verify(mockWorld, times(1)).startNextTurn();
+		};
+		
+		@Test
+		public void testCreateFood() {			
+			World mockWorld = Mockito.spy(world);
+			doReturn(mock(Food.class)).when(mockWorld).createFood(anyDouble(), anyDouble());
+
+			facade.createFood(mockWorld, 5.0, 6.0);
+
+			verify(mockWorld, times(1)).createFood(5.0, 6.0);
+		};
+		
 		@Test
 		public void testProgram() {
 			IActionHandler handler = new SimpleActionHandler(facade);

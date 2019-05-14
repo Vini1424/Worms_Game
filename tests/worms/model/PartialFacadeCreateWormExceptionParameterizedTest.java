@@ -1,10 +1,5 @@
 package worms.model;
 
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
-import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
@@ -16,22 +11,25 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 import org.mockito.Mockito;
-
-import worms.model.exceptions.IllegalActionPointException;
+import worms.model.exceptions.IllegalNameException;
 import worms.model.exceptions.IllegalPositionException;
+import worms.model.exceptions.IllegalRadiusException;
+
 
 @RunWith(Parameterized.class)
-public class PartialFacadeMoveExceptionParameterizedTest {
+public class PartialFacadeCreateWormExceptionParameterizedTest {
 
 	@Parameters(name = "Run {index}: wantedException={0}")
 	public static Collection<Object[]> exceptionCase(){
 		return Arrays.asList(new Object[][] {
-			{new IllegalPositionException(3.0, 'a')},
-			{new IllegalActionPointException(3)},
-			{new IllegalAccessException()}
+			{1.0, 1.0, 1, "", new IllegalNameException("test")},
+			{1.0, 1.0, -1, "Test1", new IllegalRadiusException(3)},
+			{Double.NaN, 1.0, 1, "Test2", new IllegalPositionException(3.0, 'a')},
+			{1.0, Double.NaN, 1, "Test2", new IllegalPositionException(3.0, 'a')},
+			{Double.POSITIVE_INFINITY, 1.0, 1, "Test2", new IllegalPositionException(3.0, 'a')}
 		});
 	}
-
+	
 	// X X X X
 	// . . . .
 	// . . . .
@@ -42,25 +40,31 @@ public class PartialFacadeMoveExceptionParameterizedTest {
 
 		private Worm worm;
 		private Facade facade;
-		
+		private World world;
+
 		@Before
 		public void setup() {
 			facade = new Facade();
 			Random random = new Random(7357);
-			World world = new World(4.0, 4.0, passableMap, random);
+			world = new World(4.0, 4.0, passableMap, random);
 			worm = new Worm(world, 1, 2, 0, 1, "Test");
 		}
 
+
 		@Parameter
+		public double positionX;
+		@Parameter(1)
+		public double positionY;
+		@Parameter(2)
+		public double radius;
+		@Parameter(3)
+		public String name;
+		@Parameter(4)
 		public Exception wantedException;
 		@Test(expected=ModelException.class)
-		public void testMoveException() throws IllegalActionPointException, IllegalPositionException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, SecurityException{
-			Worm mockWorm = Mockito.spy(worm);
-			Facade spyFacade = Mockito.spy((Facade)facade);
-
-			doThrow(wantedException).when(mockWorm).move();
-			spyFacade.move(mockWorm);
-
-			verify(mockWorm, times(1)).move();
+		public void testCreateWormException() throws Exception {
+			World mockWorld = Mockito.spy(world);
+			
+			facade.createWorm(mockWorld, positionX, positionY, 1.0, radius, name);
 		}
 }

@@ -9,9 +9,12 @@ import static org.mockito.Mockito.*;
 
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.security.Guard;
 import java.util.ArrayList;
 import java.util.*;
 
+import worms.gui.GUIOptions;
 import worms.gui.GUIUtils;
 import worms.gui.WormsGUI;
 import worms.gui.game.IActionHandler;
@@ -22,6 +25,7 @@ import worms.model.World;
 import worms.model.programs.ParseOutcome;
 import worms.model.programs.ParseOutcome.Failure;
 import worms.model.programs.ParseOutcome.Success;
+
 
 public class AddNewWormTest {
 
@@ -109,6 +113,7 @@ public class AddNewWormTest {
 		verify(anw, times(1)).cancelExecution();
 	}
 	
+	
 	@Test
 	public final void testDoStartExecutionProgramTextTrueWithSomeStringParsedIsNull() {
 		addWorm= new AddNewWorm(facade, true, screen);
@@ -148,19 +153,6 @@ public class AddNewWormTest {
 		anw.doStartExecution();
 		verify(anw, times(1)).cancelExecution();
 	}
-	
-	
-
-	/*@Test
-	public void testReadProgram() throws IOException {
-		addWorm= new AddNewWorm(facade, true, screen);
-		GUIUtils gui = mock(GUIUtils.class);
-		anw = spy(addWorm);
-		
-		//doThrow(new IOException("")).when(gui).openResource(anyString());
-		anw.readProgramText();
-		
-	}*/
 	
 	
 

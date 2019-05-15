@@ -10,12 +10,14 @@ import static org.mockito.Mockito.*;
 import java.io.IOException;
 
 import worms.gui.GUIUtils;
+import worms.gui.WormsGUI;
 import worms.gui.game.IActionHandler;
 import worms.gui.game.PlayGameScreen;
 import worms.model.IFacade;
 import worms.model.Program;
 import worms.model.World;
 import worms.model.programs.ParseOutcome;
+import worms.model.programs.ParseOutcome.Success;
 
 public class AddNewWormTest {
 
@@ -79,19 +81,27 @@ public class AddNewWormTest {
 	@Test
 	public final void testDoStartExecutionProgramTextTrueWithSomeStringParsedIsNotNullButNoSuccess() {
 		addWorm= new AddNewWorm(facade, true, screen);
-		ParseOutcome<?> parsed = mock(ParseOutcome.class);
+		Success parsed = mock(Success.class);
 		Program p = mock(Program.class);
+		WormsGUI mockGUI = mock(WormsGUI.class);
+		PlayGameScreen mockScreen = mock(PlayGameScreen.class);
 		
 		anw = spy(addWorm);
 		doReturn("").when(anw).readProgramText();
+		doReturn(facade).when(anw).getFacade();
 		doReturn(parsed).when(facade).parseProgram(anyString(), any(IActionHandler.class));
 		doReturn(true).when(parsed).isSuccess();
 		doReturn(p).when(parsed).getResult();
+		doNothing().when(anw).cancelExecution();
+		doReturn(mockScreen).when(anw).getScreen();
+		doReturn(mockGUI).when(mockScreen).getGUI();
+		doNothing().when(mockGUI).showError(anyString());
 		doReturn(false).when(facade).isWellFormed(p);
 		anw.doStartExecution();
 		verify(anw, times(1)).cancelExecution();
 	}
-/*@Test
+
+	@Test
 	public void testReadProgram() throws IOException {
 		addWorm= new AddNewWorm(facade, true, screen);
 		GUIUtils gui = mock(GUIUtils.class);
@@ -100,7 +110,7 @@ public class AddNewWormTest {
 		//doThrow(new IOException("")).when(gui).openResource(anyString());
 		anw.readProgramText();
 		
-	}*/
+	}
 	
 	
 

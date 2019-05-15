@@ -14,7 +14,6 @@ import java.util.Random;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
-
 import worms.gui.game.IActionHandler;
 import worms.model.exceptions.IllegalActionPointException;
 import worms.model.exceptions.IllegalNameException;
@@ -25,7 +24,6 @@ import worms.model.part3.Type;
 import worms.model.programs.ParseOutcome;
 import worms.model.programs.ParseOutcome.Success;
 import worms.util.Util;
-
 
 public class PartialFacadeTest {
 
@@ -743,6 +741,53 @@ public class PartialFacadeTest {
 		};
 		
 		@Test
+		public void testIsActiveFalseNullProjectile() {	
+			Projectile mockProjectile = null;
+			
+			boolean result = facade.isActive(mockProjectile);
+
+			assertEquals(false, result);
+		};
+		
+		@Test
+		public void testIsActiveFalseProjectileNullWorld() {	
+			Projectile mockProjectile = Mockito.spy(projectile);
+			doReturn(null).when(mockProjectile).getWorld();
+			
+			boolean result = facade.isActive(mockProjectile);
+
+			verify(mockProjectile, times(1)).getWorld();
+			assertEquals(false, result);
+		};
+		
+		@Test
+		public void testIsActiveFalseEqualProjectile() {	
+			World mockWorld = Mockito.spy(world);
+			Projectile mockProjectile = Mockito.spy(projectile);
+			doReturn(mockWorld).when(mockProjectile).getWorld();
+			doReturn(mockProjectile).when(mockWorld).getActiveProjectile();
+			
+			boolean result = facade.isActive(mockProjectile);
+
+			verify(mockProjectile, times(2)).getWorld();
+			assertEquals(false, result);
+		};
+		
+		@Test
+		public void testIsActiveTrueEqualProjectile() {	
+			World mockWorld = Mockito.spy(world);
+			Projectile mockProjectile = Mockito.spy(projectile);
+			Projectile mockProjectile2 = mock(Projectile.class);
+			doReturn(mockWorld).when(mockProjectile).getWorld();
+			doReturn(mockProjectile2).when(mockWorld).getActiveProjectile();
+			
+			boolean result = facade.isActive(mockProjectile);
+
+			verify(mockProjectile, times(2)).getWorld();
+			assertEquals(true, result);
+		};
+		
+		@Test
 		public void testGetActiveProjectile() {			
 			World mockWorld = Mockito.spy(world);
 			doReturn(mock(Projectile.class)).when(mockWorld).getActiveProjectile();
@@ -760,6 +805,26 @@ public class PartialFacadeTest {
 			facade.addNewFood(mockWorld);
 
 			verify(mockWorld, times(1)).addNewFood();
+		};
+		
+		@Test
+		public void testAddEmptyTeam() {			
+			World mockWorld = Mockito.spy(world);
+			doReturn(mock(Team.class)).when(mockWorld).addEmptyTeam(anyString());
+
+			facade.addEmptyTeam(mockWorld, "Test");
+
+			verify(mockWorld, times(1)).addEmptyTeam("Test");
+		};
+		
+		@Test
+		public void testCreateWorm() throws Exception {			
+			World mockWorld = Mockito.spy(world);
+			Facade spyFacade = Mockito.spy((Facade)facade);
+
+			Worm worm = spyFacade.createWorm(mockWorld, 1.0,1.0,-4*Math.PI, 1.0, "Test");
+
+			assertEquals(0.0, worm.getDirection(), EPS);
 		};
 		
 		@Test

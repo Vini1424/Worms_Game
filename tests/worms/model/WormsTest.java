@@ -152,11 +152,6 @@ public class WormsTest {
 	public final void isValidDirectionTrueTest() {
 		assertTrue(testWorm.isValidDirection(Math.PI));
 	}
-		
-	@Test(expected = AssertionError.class)
-	public final void FalseSetDirectionOverflowTest() {
-		testWorm.setDirection(10);
-	}
 	
 	@Test
 	public final void TrueSetDirectionTest() {

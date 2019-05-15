@@ -788,6 +788,52 @@ public class PartialFacadeTest {
 		};
 		
 		@Test
+		public void testGetWinnerWithNoTeam() {	
+			World mockWorld = Mockito.spy(world);
+			Worm mockWorm = Mockito.spy(worm);
+			
+			doReturn(null).when(mockWorld).getWinningTeam();
+			doReturn(mockWorm).when(mockWorld).getWinningWorm();
+			doReturn("Test").when(mockWorm).getName();
+			
+			String result = facade.getWinner(mockWorld);
+
+			verify(mockWorld, times(1)).getWinningTeam();
+			verify(mockWorld, times(1)).getWinningWorm();
+			verify(mockWorm, times(1)).getName();
+			assertEquals("Test", result);
+		};
+		
+		@Test
+		public void testGetWinnerWithTeam() {	
+			World mockWorld = Mockito.spy(world);
+			Team mockTeam = mock(Team.class);
+			
+			doReturn(mockTeam).when(mockWorld).getWinningTeam();
+			doReturn("Test").when(mockTeam).getName();
+			
+			String result = facade.getWinner(mockWorld);
+
+			verify(mockTeam, times(1)).getName();
+			verify(mockWorld, times(1)).getWinningTeam();
+			assertEquals("Test", result);
+		};
+		
+		@Test
+		public void testGetWinnerWithNullWorm() {	
+			World mockWorld = Mockito.spy(world);
+			
+			doReturn(null).when(mockWorld).getWinningTeam();
+			doReturn(null).when(mockWorld).getWinningWorm();
+			
+			String result = facade.getWinner(mockWorld);
+
+			verify(mockWorld, times(1)).getWinningTeam();
+			verify(mockWorld, times(1)).getWinningWorm();
+			assertEquals("Bob & Matthijs", result);
+		};
+		
+		@Test
 		public void testGetActiveProjectile() {			
 			World mockWorld = Mockito.spy(world);
 			doReturn(mock(Projectile.class)).when(mockWorld).getActiveProjectile();

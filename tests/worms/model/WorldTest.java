@@ -1,13 +1,17 @@
 package worms.model;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class WorldTest {
 	
@@ -231,6 +235,44 @@ public class WorldTest {
     	pos[0] = item.getXPosition();
     	pos[1] = item.getYPosition();
     	assertTrue(testWorld.overlapsWith(pos, item.getRadius(), dest) == testWorld.getActiveProjectile());
+    }
+    
+    @Test
+    public void TestGetWinningTeam() {
+    	Team mockTeamWinner = mock(Team.class);
+    	Team mockTeamLoser = mock(Team.class);
+    	World mockWorld = Mockito.spy(testWorld);
+    	LinkedList<Team> teamList = new LinkedList<Team>();
+    	teamList.add(mockTeamWinner);
+    	teamList.add(mockTeamLoser);
+    	ArrayList<Worm> mockWormListForWinner = mock(ArrayList.class);
+    	ArrayList<Worm> mockWormListForLoser = mock(ArrayList.class);
+    	doReturn(teamList).when(mockWorld).getAllTeams();
+    	doReturn(mockWormListForLoser).when(mockTeamLoser).getAllTeamMembers();
+    	doReturn(2).when(mockWormListForLoser).size();
+    	doReturn(mockWormListForWinner).when(mockTeamWinner).getAllTeamMembers();
+    	doReturn(5).when(mockWormListForWinner).size();
+    	
+    	Team result = mockWorld.getWinningTeam();
+    	
+    	assertEquals(mockTeamWinner, result);
+    }
+    
+    @Test
+    public void TestGetWinningWorm() {
+    	Worm mockWinner = mock(Worm.class);
+    	Worm mockLoser = mock(Worm.class);
+    	World mockWorld = Mockito.spy(testWorld);
+    	LinkedList<Worm> wormList = new LinkedList<Worm>();
+    	wormList.add(mockWinner);
+    	wormList.add(mockLoser);
+    	doReturn(wormList).when(mockWorld).getAllWorms();
+    	doReturn(2).when(mockLoser).getRemainingHitPoints();
+    	doReturn(5).when(mockWinner).getRemainingHitPoints();
+    	
+    	Worm result = mockWorld.getWinningWorm();
+    	
+    	assertEquals(mockWinner, result);
     }
     
 }
